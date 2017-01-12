@@ -1,8 +1,25 @@
-//使用generator函数的异步操作
+
+'use strict'
 
 const fs = require('fs');
 
 const files = [];
+
+// fs.readFile('1.txt',function(err,data){
+// 	if(err){console.log(err);}
+// 	files.push(data);
+// 	fs.readFile('2.txt',function(err,data){
+// 		if(err){console.log(err);}
+// 		files.push(data);
+// 		fs.readFile('2.txt',function(err,data){
+// 			if(err){console.log(err);}
+// 			files.push(data);
+// 			console.log(files);
+// 		});
+// 	});
+// });
+
+//观察到上面回调函数中操作是相同的，因此将其抽取出来递归调用
 
 function readFile(fileName){
 	fs.readFile(fileName,function(err,data){
@@ -21,39 +38,8 @@ function* genRead(){
 	console.log(files);
 }
 
-// var g = genRead();
-// var res = g.next();
+// 初次启动
+var g = genRead();
+var res = g.next();
 
 
-//与thunk函数配合
-
-const thunkify = require('./thunkify');
-
-const thunkFiles = [];
-
-var thunkReadFile = thunkify(fs.readFile);
-
-function* thunkGenRead(){
-	var thunkFile1 = yield thunkReadFile('1.txt');
-	thunkFiles.push(thunkFile1);
-	var thunkFile2 = yield thunkReadFile('2.txt');
-	thunkFiles.push(thunkFile1);
-	var thunkFile3 = yield thunkReadFile('3.txt');
-	thunkFiles.push(thunkFile1);
-	console.dir(thunkFiles);
-}
-
-
-function runThunkGen(thunkGen){
-    var tg = thunkGen();
-    function next(err,data){
-        var tres = tg.next(data);
-        if(tres.done){
-            return;
-        }
-        tres.value(next);
-    }
-    next();
-}
-
-runThunkGen(thunkGenRead);
