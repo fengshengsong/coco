@@ -5,15 +5,15 @@ const fs = require('fs');
 const files = [];
 
 function readFile(filename){
-    return function(callback){
+    return new Promise(function(resolve,reject){
         fs.readFile(filename,function(err,data){
             if(err){
-                callback(err)
+                reject(err);
             }else{
-                callback(null,data);                
+                resolve(data);
             }
         });
-    }
+    });
 }
 
 function* genRead(){
@@ -30,6 +30,22 @@ function* genRead(){
     }
 }
 
+function wrapPromise(fn){
+    if(isPromise(fn)){
+        return function(callback){
+            return fn.then(function(data){
+                callback(null,data);
+            },function(err){
+                callback(err);
+            });
+        }
+    }
+}
+
+function isPromise(fn){
+    return fn && typeof fn.then === 'function';
+}
+
 function run(gen){
     var g = gen();
     function next(err,data){
@@ -40,8 +56,9 @@ function run(gen){
         if(ret.done){
             return;
         }
-        if(typeof ret.value == 'function'){
-            ret.value.call(this,function(err,data){
+        var promiseValue = wrapPromise(ret.value);
+        if(typeof promiseValue == 'function'){
+            promiseValue.call(this,function(err,data){
                 if(err){
                     next(err);
                 }else{
